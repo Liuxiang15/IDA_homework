@@ -31,29 +31,80 @@ def preProcess():
 	data = data[~data["discharge_disposition_id"].isin([11, 13, 14, 19, 20, 21])]
 	print("此时数据的行数为："+ str(data.index.size))
 	# graph(data)
-
-	###记住是用占比20%的testData中的每一条进行验证
+	
 	X_train, labels, test_data, test_labels = divide_into_train_test(data)
-	trainDatas = normData(X_train)
-	testDatas = normData(test_data)
-	# 用标准化后的数据进行分离
+	df = X_train.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+					  'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+					  'num_medications',
+					  'number_outpatient', 'number_emergency','number_inpatient','readmitted']]
+	prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
+	print("--------------类别的先验概率--------------")
+	print(prior_probability)
+	
+	# 计算每个特征属性条件概率：
+	race_condition_propability = pd.crosstab(df['race'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	gender_condition_propability = pd.crosstab(df['gender'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	age_condition_propability = pd.crosstab(df['age'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	admission_type_id_condition_propability = pd.crosstab(df['admission_type_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	discharge_disposition_id_condition_propability = pd.crosstab(df['discharge_disposition_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	admission_source_id_condition_propability = pd.crosstab(df['admission_source_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	time_in_hospital_condition_propability = pd.crosstab(df['time_in_hospital'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	num_lab_procedures_condition_propability = pd.crosstab(df['num_lab_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	num_procedures_condition_propability = pd.crosstab(df['num_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	num_medications_condition_propability = pd.crosstab(df['num_medications'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	number_outpatient_condition_propability = pd.crosstab(df['number_outpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	number_emergency_condition_propability = pd.crosstab(df['number_emergency'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	number_inpatient_condition_propability = pd.crosstab(df['number_inpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	
+	print(race_condition_propability)
+	print(gender_condition_propability)
+	# 给出测试样本：
+	test_data = pd.Series(['Caucasian', 'Male', '[80-90)', 1, 6, 7, 6, 60, 2, 21, 1, 0, 0],
+						  index=['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+							'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+							'num_medications','number_outpatient', 'number_emergency','number_inpatient'])
+	print("--------race_condition_propability.ix[:,test_data[0]] = -----")
+	px = race_condition_propability.ix[test_data[0],:].mul(gender_condition_propability.ix[test_data[1],:]).mul(age_condition_propability.ix[test_data[2],:])[:-1]
+	print(px)
+	
+	# 计算P(C | x)
+	res = prior_probability.mul(px).idxmax()
+	print("贝叶斯预测结果是"+res)
+	#记住是用占比20%的testData中的每一条进行验证
+    # naiveBayesian(data)
+	
 
-	testKNN(trainDatas, testDatas, labels, test_labels, 10)
+    #注释部分为测试KNN算法
+	# trainDatas = normData(X_train)
+	# testDatas = normData(test_data)
+	# testKNN(trainDatas, testDatas, labels, test_labels, 10)
 
-	# #用来测试KNN算法的数据
-	# testData = np.array([0, 0.5,0.88888889,0,0.18518519,0.25,0.38461538,0.5042735, 0.33333333, 0.25641026, 0.02777778,0,0])
-	# prediction = KNN(trainDatas.values, testData, labels, 10)
-	# print("预测结果是：")
-	# print(prediction)
-	# testData = np.array(
-	# 	[0.2,0,0.77777778,0,0, 0.25,0.07692308, 0.26495726, 0.66666667,0.15384615,0,0,0]
-	# )
-	# prediction = KNN(trainDatas.values, testData, labels, 10)
-	# print("预测结果是：")
-	# print(prediction)
-	# print("-----------------------------testDatas的长度是：")
-	# print(len(testDatas.values.tolist()))
-	# print(testDatas)
+def naiveBayesian(data):
+	# 1.分解各类先验样本数据中的特征
+	# 2、计算各类数据中，各特征的条件概率
+	# （比如：特征1出现的情况下，属于A类的概率p(A | 特征1)，属于B类的概率p(B | 特征1)，属于C类的概率p(C | 特征1)......）
+	# 3、分解待分类数据中的特征（特征1、特征2、特征3、特征4......）
+	# 4、计算各特征的各条件概率的乘积，如下所示：
+	# 判断为A类的概率：p(A | 特征1) * p(A | 特征2) * p(A | 特征3) * p(A | 特征4).....
+	# 5、结果中的最大值就是该样本所属的类别
+
+    df = data.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+                        'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+                        'num_medications',
+                        'number_outpatient', 'number_emergency', 'number_inpatient','readmitted']]
+    prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
+    print("--------------类别的先验概率--------------")
+    print(prior_probability)
 
 def graph(data):
 	#以图表形式统计余下病人年龄、种族、性别、入院类型、入院初诊（diag_1）、出院去向等信息分布情况
@@ -194,7 +245,10 @@ def divide_into_train_test(data):
 
 	y = data.ix[:, "readmitted"].values			#提取标签数组
 	X_train, X_test, y_train, y_test = train_test_split(data, y, test_size = 0.2, random_state = 42)
-	# print("-----------------以下为X_train的五个示例----------------------------------")
+	print("-----------------以下为X_test的五个示例----------------------------------")
+	# for i in range(5):
+	# 	row = X_test.iloc[i].values  # 返回一个list
+	# 	print(row)
 	# print(X_train.iloc[[0,5],:])
 	# print("-----------------以下为X_train的五个示例标准化后的数据----------------------------------")
 	# print(normData(X_train.iloc[[0,5],:]))
@@ -251,18 +305,7 @@ def testKNN(trainDatas, testDatas, labels, test_labels, k):
 	correct_rate = correct_total_num / test_total_num
 	print(str(test_total_num)+"条测试数据中成功"+str(correct_total_num)+",成功占比为"+str(correct_rate))
 
-def NaiveBayesian(trainDatas):
-	# 1.分解各类先验样本数据中的特征
-	# 2、计算各类数据中，各特征的条件概率
-	# （比如：特征1出现的情况下，属于A类的概率p(A | 特征1)，属于B类的概率p(B | 特征1)，属于C类的概率p(C | 特征1)......）
-	# 3、分解待分类数据中的特征（特征1、特征2、特征3、特征4......）
-	# 4、计算各特征的各条件概率的乘积，如下所示：
-	# 判断为A类的概率：p(A | 特征1) * p(A | 特征2) * p(A | 特征3) * p(A | 特征4).....
-	# 5、结果中的最大值就是该样本所属的类别
 
-	# 计算类别的先验概率， p(北京)
-	# pc = df[‘addr’].value_counts() / df[‘addr’].size
-	pass
 
 preProcess()
 
