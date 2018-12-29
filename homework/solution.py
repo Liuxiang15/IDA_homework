@@ -9,6 +9,10 @@ import  matplotlib
 matplotlib.rcParams['font.sans-serif'] = ['SimHei']
 matplotlib.rcParams['axes.unicode_minus'] = False
 
+from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
+# from sklearn.cross_validation import train_test_split
+
 def preProcess():
 	data = pd.read_csv("diabetic_data.csv")
 
@@ -26,7 +30,30 @@ def preProcess():
 	#将 discharge_disposition_id 字段为11，13，14，19，20，21的记录过滤掉
 	data = data[~data["discharge_disposition_id"].isin([11, 13, 14, 19, 20, 21])]
 	print("此时数据的行数为："+ str(data.index.size))
-	graph(data)
+	# graph(data)
+
+	###记住是用占比20%的testData中的每一条进行验证
+	X_train, labels, test_data, test_labels = divide_into_train_test(data)
+	trainDatas = normData(X_train)
+	testDatas = normData(test_data)
+	# 用标准化后的数据进行分离
+
+	testKNN(trainDatas, testDatas, labels, test_labels, 10)
+
+	# #用来测试KNN算法的数据
+	# testData = np.array([0, 0.5,0.88888889,0,0.18518519,0.25,0.38461538,0.5042735, 0.33333333, 0.25641026, 0.02777778,0,0])
+	# prediction = KNN(trainDatas.values, testData, labels, 10)
+	# print("预测结果是：")
+	# print(prediction)
+	# testData = np.array(
+	# 	[0.2,0,0.77777778,0,0, 0.25,0.07692308, 0.26495726, 0.66666667,0.15384615,0,0,0]
+	# )
+	# prediction = KNN(trainDatas.values, testData, labels, 10)
+	# print("预测结果是：")
+	# print(prediction)
+	# print("-----------------------------testDatas的长度是：")
+	# print(len(testDatas.values.tolist()))
+	# print(testDatas)
 
 def graph(data):
 	#以图表形式统计余下病人年龄、种族、性别、入院类型、入院初诊（diag_1）、出院去向等信息分布情况
@@ -101,8 +128,140 @@ def graph(data):
 	plt.show()
 
 
+def normData(data):
+	# 取部分属性作为标准来预测患者的治疗效果
+	data = data.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+						'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+						'num_medications',
+						'number_outpatient', 'number_emergency', 'number_inpatient',
+						# 'diag_1', 'diag_2','diag_3', 'number_diagnoses', 'max_glu_serum', 'A1Cresult'
+						]]
+
+	#将[race]列元素量化：Caucasian 1， AfricanAmerican 2, default_value 3 ,Hispanic 4,Asian 5, other 6
+	data.loc[data.race == "Caucasian", "race"] = 1
+	data.loc[data.race == "AfricanAmerican", "race"] = 2
+	data.loc[data.race == "default_value", "race"] = 3
+	data.loc[data.race == "Hispanic", "race"] = 4
+	data.loc[data.race == "Asian", "race"] = 5
+	data.loc[data.race == "Other", "race"] = 6
+
+	#将[gender]列元素量化
+	data.loc[data.gender == "Female", "gender"] = 0
+	data.loc[data.gender == "Male", "gender"] = 1
+	data.loc[data.gender == "Unknown/Invalid", "gender"] = 2
+
+	#[age]列元素量化
+	data.loc[data.age == "[0-10)", "age"] = 5
+	data.loc[data.age == "[10-20)", "age"] = 15
+	data.loc[data.age == "[20-30)", "age"] = 25
+	data.loc[data.age == "[30-40)", "age"] = 35
+	data.loc[data.age == "[40-50)", "age"] = 45
+	data.loc[data.age == "[50-60)", "age"] = 55
+	data.loc[data.age == "[60-70)", "age"] = 65
+	data.loc[data.age == "[70-80)", "age"] = 75
+	data.loc[data.age == "[80-90)", "age"] = 85
+	data.loc[data.age == "[90-100)", "age"] = 95
+
+	print("---------------量化后的数据是：------------------")
+	row = data.iloc[0].values  # 返回一个list
+	print(row)
+	# print(data.iloc[[0,1],[2]])
+
+	#把每一个特征值除以该特征的范围，保证标准化后每一个特征值都在0~1之间。
+	maxVals = data.max(axis=0)
+	# print('-------------------------输出最大值--------------------')
+	# print(maxVals)
+	minVals = data.min(axis=0)
+	# print('-------------------------输出最小值--------------------')
+	# print(minVals)
+
+	ranges = maxVals - minVals
+	normedData = (data - minVals) / ranges
+	# print('-------------------------标准化数据----------------------')
+	# print(normedData)
+
+	print('-------------------------前三条标准化数据是----------------------')
+	# print(normedData.loc[[0,1,2],:])
+	for i in range(2):
+		row = normedData.iloc[i].values  # 返回一个list
+		print(row)
+	return normedData
+
 #合理划分训练集和测试集，实现课程介绍的（但不限于）两种分类算法，用于预测患者的治疗效果，并比较分析各算法精度
-def divide_into_train_test():
+def divide_into_train_test(data):
+	# print("--------------进入划分函数-------")
+	# print(data)
+
+	y = data.ix[:, "readmitted"].values			#提取标签数组
+	X_train, X_test, y_train, y_test = train_test_split(data, y, test_size = 0.2, random_state = 42)
+	# print("-----------------以下为X_train的五个示例----------------------------------")
+	# print(X_train.iloc[[0,5],:])
+	# print("-----------------以下为X_train的五个示例标准化后的数据----------------------------------")
+	# print(normData(X_train.iloc[[0,5],:]))
+	# print("--------------以下为X_test------------")
+	# print(X_test)
+	# print('----------------提取某些属性后的新data是-------------')
+	# print(data.loc[0,:])
+	return X_train, y_train, X_test, y_test
+
+
+def KNN(trainData, testData, labels, k):
+	distSquare = (trainData - testData) ** 2  #计算距离的平方
+	distSquareSum = distSquare.sum(axis=1)    # 求每一行的差值平方和
+	distances = distSquareSum ** 0.5 		  # 开平方，得出每个样本到测试点的距离
+	sortedIndex = distances.argsort()		  # 排序，得到排序后的下标
+	# print("---------------------------排序后的下标是：------------------------")
+	# print(sortedIndex)
+	min_k = sortedIndex[:k]					  # 取最小的k个
+	#分别定义三个变量统计三类标签No <30 >30对应的数量
+	total = [0,0,0]
+	for i in min_k:
+		label = labels[i]
+		if(label == "NO"):
+			total[0] += 1
+		elif label == "<30":
+			total[1] += 1
+		else:
+			total[2] += 1
+	max_label_num = total.index(max(total))
+	if max_label_num == 0:
+		print("NO")
+		return "NO"
+	elif max_label_num == 1:
+		print("<30")
+		return "<30"
+	else:
+		print(">30")
+		return ">30"
+
+def testKNN(trainDatas, testDatas, labels, test_labels, k):
+	correct_rate = 0
+	test_datas_list = testDatas.values.tolist()
+	test_total_num = len(test_datas_list)		#测试数据个数
+	correct_total_num = 0  # 测试成功个数
+	for index, item in enumerate(test_datas_list):
+		# 用来测试KNN算法的数据
+		single_testdata = np.array(item)
+		prediction_label = KNN(trainDatas.values, single_testdata, labels, k)
+		if(prediction_label == test_labels[index]):
+			correct_total_num += 1
+			print("预测成功")
+		else:
+			print("预测失败")
+	correct_rate = correct_total_num / test_total_num
+	print(str(test_total_num)+"条测试数据中成功"+str(correct_total_num)+",成功占比为"+str(correct_rate))
+
+def NaiveBayesian(trainDatas):
+	# 1.分解各类先验样本数据中的特征
+	# 2、计算各类数据中，各特征的条件概率
+	# （比如：特征1出现的情况下，属于A类的概率p(A | 特征1)，属于B类的概率p(B | 特征1)，属于C类的概率p(C | 特征1)......）
+	# 3、分解待分类数据中的特征（特征1、特征2、特征3、特征4......）
+	# 4、计算各特征的各条件概率的乘积，如下所示：
+	# 判断为A类的概率：p(A | 特征1) * p(A | 特征2) * p(A | 特征3) * p(A | 特征4).....
+	# 5、结果中的最大值就是该样本所属的类别
+
+	# 计算类别的先验概率， p(北京)
+	# pc = df[‘addr’].value_counts() / df[‘addr’].size
 	pass
 
 preProcess()
