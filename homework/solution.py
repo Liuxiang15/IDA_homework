@@ -33,53 +33,68 @@ def preProcess():
 	# graph(data)
 	
 	X_train, labels, test_data, test_labels = divide_into_train_test(data)
-	df = X_train.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
-					  'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
-					  'num_medications',
-					  'number_outpatient', 'number_emergency','number_inpatient','readmitted']]
-	prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
-	print("--------------类别的先验概率--------------")
-	print(prior_probability)
-	
-	# 计算每个特征属性条件概率：
-	race_condition_propability = pd.crosstab(df['race'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
-	gender_condition_propability = pd.crosstab(df['gender'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
-	age_condition_propability = pd.crosstab(df['age'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
-	admission_type_id_condition_propability = pd.crosstab(df['admission_type_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	discharge_disposition_id_condition_propability = pd.crosstab(df['discharge_disposition_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	admission_source_id_condition_propability = pd.crosstab(df['admission_source_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	time_in_hospital_condition_propability = pd.crosstab(df['time_in_hospital'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	num_lab_procedures_condition_propability = pd.crosstab(df['num_lab_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	num_procedures_condition_propability = pd.crosstab(df['num_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	num_medications_condition_propability = pd.crosstab(df['num_medications'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	number_outpatient_condition_propability = pd.crosstab(df['number_outpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	number_emergency_condition_propability = pd.crosstab(df['number_emergency'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	number_inpatient_condition_propability = pd.crosstab(df['number_inpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
-																								   axis=1)
-	
-	print(race_condition_propability)
-	print(gender_condition_propability)
-	# 给出测试样本：
-	test_data = pd.Series(['Caucasian', 'Male', '[80-90)', 1, 6, 7, 6, 60, 2, 21, 1, 0, 0],
-						  index=['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
-							'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
-							'num_medications','number_outpatient', 'number_emergency','number_inpatient'])
-	print("--------race_condition_propability.ix[:,test_data[0]] = -----")
-	px = race_condition_propability.ix[test_data[0],:].mul(gender_condition_propability.ix[test_data[1],:]).mul(age_condition_propability.ix[test_data[2],:])[:-1]
-	print(px)
-	
-	# 计算P(C | x)
-	res = prior_probability.mul(px).idxmax()
-	print("贝叶斯预测结果是"+res)
+	naiveBayesian(X_train)
+	# df = X_train.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+	# 				  'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+	# 				  'num_medications',
+	# 				  'number_outpatient', 'number_emergency','number_inpatient','readmitted']]
+	# prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
+	# print("--------------类别的先验概率--------------")
+	# print(prior_probability)
+	#
+	# # 计算每个特征属性条件概率：
+	# # total_condition_probility_dict = {}
+	# # total_condition_probilit
+	# race_condition_propability = pd.crosstab(df['race'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	# gender_condition_propability = pd.crosstab(df['gender'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	# age_condition_propability = pd.crosstab(df['age'], df['readmitted'], margins=True).apply(lambda x: x / x[-1], axis=1)
+	# admission_type_id_condition_propability = pd.crosstab(df['admission_type_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# discharge_disposition_id_condition_propability = pd.crosstab(df['discharge_disposition_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# admission_source_id_condition_propability = pd.crosstab(df['admission_source_id'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# time_in_hospital_condition_propability = pd.crosstab(df['time_in_hospital'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# num_lab_procedures_condition_propability = pd.crosstab(df['num_lab_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# num_procedures_condition_propability = pd.crosstab(df['num_procedures'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# num_medications_condition_propability = pd.crosstab(df['num_medications'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# number_outpatient_condition_propability = pd.crosstab(df['number_outpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# number_emergency_condition_propability = pd.crosstab(df['number_emergency'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	# number_inpatient_condition_propability = pd.crosstab(df['number_inpatient'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+	# 																							   axis=1)
+	#
+	# propabilities_dict = pd.Series([race_condition_propability,gender_condition_propability,age_condition_propability,admission_type_id_condition_propability,
+	# 								discharge_disposition_id_condition_propability,admission_source_id_condition_propability,
+	# 								time_in_hospital_condition_propability,num_lab_procedures_condition_propability,
+	# 								num_procedures_condition_propability,num_medications_condition_propability,
+	# 								number_outpatient_condition_propability,number_emergency_condition_propability,
+	# 								number_inpatient_condition_propability],index=[0,1,2,3,4,5,6,7,8,9,10,11,12])
+	#
+	# #这里定义的index数组和测试数据的index数组相对应
+	# # print(propabilities_dict)
+	# # print(race_condition_propability)
+	# # print(gender_condition_propability)
+	# # 给出测试样本：
+	# test_data = pd.Series(['Caucasian', 'Male', '[80-90)', 1, 6, 7, 6, 60, 2, 21, 1, 0, 0],
+	# 					  index=['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+	# 						'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+	# 						'num_medications','number_outpatient', 'number_emergency','number_inpatient'])
+	#
+	# px = race_condition_propability.ix[test_data[0],:]
+	# for i in range(1,12):
+	# 	px = px.mul(propabilities_dict[i].ix[test_data[i], :])
+	# px = px[:-1]
+	# print(px)
+	#
+	# # 计算P(C | x)
+	# res = prior_probability.mul(px).idxmax()
+	# print("贝叶斯预测结果是"+res)
 	#记住是用占比20%的testData中的每一条进行验证
     # naiveBayesian(data)
 	
@@ -97,14 +112,84 @@ def naiveBayesian(data):
 	# 4、计算各特征的各条件概率的乘积，如下所示：
 	# 判断为A类的概率：p(A | 特征1) * p(A | 特征2) * p(A | 特征3) * p(A | 特征4).....
 	# 5、结果中的最大值就是该样本所属的类别
-
-    df = data.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
-                        'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
-                        'num_medications',
-                        'number_outpatient', 'number_emergency', 'number_inpatient','readmitted']]
-    prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
-    print("--------------类别的先验概率--------------")
-    print(prior_probability)
+	
+	df = data.loc[:, ['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+						 'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+						 'num_medications',
+						 'number_outpatient', 'number_emergency', 'number_inpatient', 'readmitted']]
+	prior_probability = df['readmitted'].value_counts() / df['readmitted'].size
+	print("--------------类别的先验概率--------------")
+	print(prior_probability)
+	
+	# 计算每个特征属性条件概率：
+	# total_condition_probility_dict = {}
+	# total_condition_probilit
+	race_condition_propability = pd.crosstab(df['race'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																							   axis=1)
+	gender_condition_propability = pd.crosstab(df['gender'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																								   axis=1)
+	age_condition_propability = pd.crosstab(df['age'], df['readmitted'], margins=True).apply(lambda x: x / x[-1],
+																							 axis=1)
+	admission_type_id_condition_propability = pd.crosstab(df['admission_type_id'], df['readmitted'],
+														  margins=True).apply(lambda x: x / x[-1],
+																			  axis=1)
+	discharge_disposition_id_condition_propability = pd.crosstab(df['discharge_disposition_id'], df['readmitted'],
+																 margins=True).apply(lambda x: x / x[-1],
+																					 axis=1)
+	admission_source_id_condition_propability = pd.crosstab(df['admission_source_id'], df['readmitted'],
+															margins=True).apply(lambda x: x / x[-1],
+																				axis=1)
+	time_in_hospital_condition_propability = pd.crosstab(df['time_in_hospital'], df['readmitted'], margins=True).apply(
+		lambda x: x / x[-1],
+		axis=1)
+	num_lab_procedures_condition_propability = pd.crosstab(df['num_lab_procedures'], df['readmitted'],
+														   margins=True).apply(lambda x: x / x[-1],
+																			   axis=1)
+	num_procedures_condition_propability = pd.crosstab(df['num_procedures'], df['readmitted'], margins=True).apply(
+		lambda x: x / x[-1],
+		axis=1)
+	num_medications_condition_propability = pd.crosstab(df['num_medications'], df['readmitted'], margins=True).apply(
+		lambda x: x / x[-1],
+		axis=1)
+	number_outpatient_condition_propability = pd.crosstab(df['number_outpatient'], df['readmitted'],
+														  margins=True).apply(lambda x: x / x[-1],
+																			  axis=1)
+	number_emergency_condition_propability = pd.crosstab(df['number_emergency'], df['readmitted'], margins=True).apply(
+		lambda x: x / x[-1],
+		axis=1)
+	number_inpatient_condition_propability = pd.crosstab(df['number_inpatient'], df['readmitted'], margins=True).apply(
+		lambda x: x / x[-1],
+		axis=1)
+	
+	propabilities_dict = pd.Series([race_condition_propability, gender_condition_propability, age_condition_propability,
+									admission_type_id_condition_propability,
+									discharge_disposition_id_condition_propability,
+									admission_source_id_condition_propability,
+									time_in_hospital_condition_propability, num_lab_procedures_condition_propability,
+									num_procedures_condition_propability, num_medications_condition_propability,
+									number_outpatient_condition_propability, number_emergency_condition_propability,
+									number_inpatient_condition_propability],
+								   index=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+	
+	# 这里定义的index数组和测试数据的index数组相对应
+	# print(propabilities_dict)
+	# print(race_condition_propability)
+	# print(gender_condition_propability)
+	# 给出测试样本：
+	test_data = pd.Series(['Caucasian', 'Male', '[80-90)', 1, 6, 7, 6, 60, 2, 21, 1, 0, 0],
+						  index=['race', 'gender', 'age', 'admission_type_id', 'discharge_disposition_id',
+								 'admission_source_id', 'time_in_hospital', 'num_lab_procedures', 'num_procedures',
+								 'num_medications', 'number_outpatient', 'number_emergency', 'number_inpatient'])
+	
+	px = race_condition_propability.ix[test_data[0], :]
+	for i in range(1, 12):
+		px = px.mul(propabilities_dict[i].ix[test_data[i], :])
+	px = px[:-1]
+	print(px)
+	
+	# 计算P(C | x)
+	res = prior_probability.mul(px).idxmax()
+	print("贝叶斯预测结果是" + res)
 
 def graph(data):
 	#以图表形式统计余下病人年龄、种族、性别、入院类型、入院初诊（diag_1）、出院去向等信息分布情况
